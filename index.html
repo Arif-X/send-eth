@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+</head>
+<body>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-12 text-center">
+            <h2 class="text-primary">Your Wallet Address: <strong class="text-danger" id="wallet-address"></strong></h2>
+            <h3><u>Just Using Goerli Testnet Network</u></h3>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-4 text-center">
+            <div class="form-group">
+                <h3>Enter Amount Here</h3>
+                <input type="text" class="form-control" name="amount" id="inp_amount" aria-describedby="helpId"
+                placeholder="Enter ETH Amount">
+            </div>
+            <button type="button" onClick="startProcess()" class="btn btn-success mt-4">Pay Now</button>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.2.2/dist/web3.min.js"></script>
+    <script type="text/javascript">
+        window.addEventListener("load", function() {
+            if (window.ethereum) {
+                window.web3 = new Web3(window.ethereum);
+
+                window.ethereum.enable()
+                .then(() => {
+                    console.log("Ethereum enabled");
+
+                    web3.eth.getAccounts(function (error, accounts) {
+                        if (error != null) {
+                            self.setStatus("There was an error fetching your accounts");
+                            return;
+                        }
+                        if (accounts.length > 0) {
+                            document.getElementById("wallet-address").innerHTML = accounts;
+                            if(window.ethereum.networkVersion != 5){
+                                alert("Please change to Goerli Network")
+                            }
+                        }
+                    });
+                })
+
+                .catch(() => {
+                    console.warn('User didn\'t allow access to accounts.');
+                    waitLogin();
+                });
+
+
+                window.ethereum.on('accountsChanged', function (accounts) {
+                    document.getElementById("wallet-address").innerHTML = accounts;
+                });
+
+
+                window.ethereum.on('networkChanged', function(networkId){
+                    console.log('networkChanged',networkId);
+                });
+            } else {
+                console.warn(
+                  "No web3 detected. Falling back to http://127.0.0.1:8545. You should remove this fallback when you deploy live",
+                  );
+
+                window.web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"),);
+            }
+        });
+
+        function startProcess() {
+            if (document.getElementById('inp_amount').value > 0) {
+                EThAppDeploy.loadEthereum();
+            } else {
+                alert('Please Enter Valid Amount');
+            }
+        }
+
+
+        EThAppDeploy = {
+            loadEthereum: async () => {
+                if (typeof window.ethereum !== 'undefined') {
+                    EThAppDeploy.web3Provider = ethereum;
+                    EThAppDeploy.requestAccount(ethereum);
+                } else {
+                    console.log("Non-Ethereum browser detected. You should consider installing MetaMask.");
+                }
+            },
+
+            requestAccount: async (ethereum) => {
+                if(window.ethereum.networkVersion != 5){
+                    alert("Please change to Goerli Network")
+                } else {
+                    ethereum
+                    .request({
+                        method: 'eth_requestAccounts'
+                    })
+                    .then((resp) => {
+                        EThAppDeploy.payNow(ethereum, resp[0]);
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    });
+                }
+            },
+
+            payNow: async (ethereum, from) => {
+                var amount = document.getElementById('inp_amount').value;
+                ethereum
+                .request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: from,
+                        to: "0xa2503b22f42880980792f13726d62a9c56052477",
+                        value: '0x' + ((amount * 1000000000000000000).toString(16)),
+                    }, ],
+                })
+                .then((txHash) => {
+                    if (txHash) {
+                        console.log(txHash);
+                    } else {
+                        console.log("Something went wrong. Please try again");
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+            },
+        }
+    </script>
+</body>
+</html>
